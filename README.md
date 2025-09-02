@@ -31,3 +31,8 @@ The state **cannot be shared or synchronized between instances** by design for p
 </i>
 In this implementation I will try building a KV repository with expiring keys backed by an in-memory KV<br>
 store, specifically Redis but you can swap it out for your preferred choice
+
+## Key Features
+- Time-based validity for the keys
+- Automatic cleanup of keys after expiry
+- Lazy expiration cleanup strategy
