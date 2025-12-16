@@ -33,6 +33,16 @@ In this implementation I will try building a KV repository with expiring keys ba
 store, specifically Redis but you can swap it out for your preferred choice
 
 ## Key Features
+
 - Time-based validity for the keys
 - Automatic cleanup of keys after expiry
 - Lazy expiration cleanup strategy
+
+## Core Operations
+
+The Watermill ExpiringKeyRepository expects only one interface
+
+```Go
+IsDuplicate(context.Context, string) (bool, error)
+Len() int
+```
