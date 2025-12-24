@@ -1,4 +1,4 @@
-module github.com/cmmasaba/expired-key-repo
+module github.com/cmmasaba/deduplication
 
 go 1.24.1
 
