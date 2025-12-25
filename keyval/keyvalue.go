@@ -56,8 +56,13 @@ func NewRedisExpiringKeyRepo(window time.Duration, redisURL string) (*RedisExpir
 }
 
 // IsDuplicate checks if the `data` is duplicate within a given time window.
-func (r *RedisExpiringKeyRepo) IsDuplicate(ctx context.Context, data Payload) (bool, error) {
-	exists, err := r.cache.Exists(ctx, data.Key).Result()
+func (r *RedisExpiringKeyRepo) IsDuplicate(ctx context.Context, data any) (bool, error) {
+	payload, ok := data.(Payload)
+	if !ok {
+		return false, errors.New("bad data")
+	}
+
+	exists, err := r.cache.Exists(ctx, payload.Key).Result()
 	if err != nil {
 		return false, err
 	}
@@ -66,7 +71,7 @@ func (r *RedisExpiringKeyRepo) IsDuplicate(ctx context.Context, data Payload) (b
 		return true, nil
 	}
 
-	err = r.cache.SetEx(ctx, data.Key, data.Value, r.window).Err()
+	err = r.cache.SetEx(ctx, payload.Key, payload.Value, r.window).Err()
 	if err != nil {
 		return false, err
 	}

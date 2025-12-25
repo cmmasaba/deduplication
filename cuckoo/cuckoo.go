@@ -2,35 +2,39 @@ package cuckoofilter
 
 import (
 	"context"
+	"fmt"
+	"time"
 
 	"github.com/cmmasaba/deduplication/cache"
 )
 
-type CFStore interface {
+type cfStore interface {
 	CFAdd(context.Context, string, string) (bool, error)
+	CFDel(context.Context, string, string) (bool, error)
 	CFExists(context.Context, string, string) (bool, error)
 	CFInit(ctx context.Context, cfKey string, capacity, bucketSize int64) (bool, error)
 }
 
 type CuckooFilter struct {
-	store CFStore
-	cfKey string
+	store  cfStore
+	cfKey  string
+	window time.Duration
 }
 
 // NewCuckooFilter creates and returns a [CuckooFilter] backed by Redis.
 func NewCuckooFilter(
-	ctx context.Context,
 	connStr, cfKey string,
 	capacity, bucketSize int64,
+	window time.Duration,
 ) (*CuckooFilter, error) {
 	c, err := cache.NewCache(connStr)
 	if err != nil {
 		return nil, err
 	}
 
-	cf := &CuckooFilter{store: c, cfKey: cfKey}
+	cf := &CuckooFilter{store: c, cfKey: cfKey, window: window}
 
-	_, err = cf.store.CFInit(ctx, cfKey, capacity, bucketSize)
+	_, err = cf.store.CFInit(context.Background(), cfKey, capacity, bucketSize)
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +43,12 @@ func NewCuckooFilter(
 }
 
 // IsDuplicate checks if the key is present in the cuckoo filter.
-func (cf *CuckooFilter) IsDuplicate(ctx context.Context, key string) (bool, error) {
+func (cf *CuckooFilter) IsDuplicate(ctx context.Context, data any) (bool, error) {
+	key, ok := data.(string)
+	if !ok {
+		return false, fmt.Errorf("cf-isduplicate: bad data, expected string")
+	}
+
 	exists, err := cf.store.CFExists(ctx, cf.cfKey, key)
 	if err != nil {
 		return false, err

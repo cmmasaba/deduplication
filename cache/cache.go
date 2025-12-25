@@ -82,6 +82,15 @@ func (c *Cache) BFExists(ctx context.Context, bfKey, key string) (bool, error) {
 	return exists, nil
 }
 
+// func (c *Cache) BFDel(ctx context.Context, cfKey, key string) (bool, error) {
+// 	ok, err := c.cache.Do(ctx, "BF.DEL", cfKey, key).Bool()
+// 	if err != nil {
+// 		return false, err
+// 	}
+
+// 	return ok, nil
+// }
+
 func (c *Cache) CFInit(
 	ctx context.Context,
 	cfKey string,
@@ -113,4 +122,13 @@ func (c *Cache) CFExists(ctx context.Context, cfKey, key string) (bool, error) {
 	}
 
 	return exists, nil
+}
+
+func (c *Cache) CFDel(ctx context.Context, cfKey, key string) (bool, error) {
+	ok, err := c.cache.Do(ctx, "CF.DEL", cfKey, key).Bool()
+	if err != nil {
+		return false, err
+	}
+
+	return ok, nil
 }

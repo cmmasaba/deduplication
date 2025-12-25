@@ -2,36 +2,37 @@ package bloomfilter
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/cmmasaba/deduplication/cache"
 )
 
-type BFStore interface {
+type bfStore interface {
 	BFAdd(context.Context, string, string) (bool, error)
+	// BFDel(context.Context, string, string) (bool, error)
 	BFExists(context.Context, string, string) (bool, error)
 	BFInit(context.Context, string, float64, int64, int64) (bool, error)
 }
 
 type BloomFilter struct {
-	store BFStore
-	bfKey string
+	store bfStore
+	Key   string
 }
 
-// NewCuckooFilter creates and returns a [BloomFilter] backed by Redis.
-func NewCuckooFilter(
-	ctx context.Context,
+// NewBloomFilter creates and returns a [BloomFilter] backed by Redis.
+func NewBloomFilter(
 	connStr, bfKey string,
 	errorRate float64,
-	capacity, bucketSize int64,
+	capacity, expansion int64,
 ) (*BloomFilter, error) {
 	c, err := cache.NewCache(connStr)
 	if err != nil {
 		return nil, err
 	}
 
-	bf := &BloomFilter{store: c, bfKey: bfKey}
+	bf := &BloomFilter{store: c, Key: bfKey}
 
-	_, err = bf.store.BFInit(ctx, bfKey, errorRate, capacity, bucketSize)
+	_, err = bf.store.BFInit(context.Background(), bfKey, errorRate, capacity, expansion)
 	if err != nil {
 		return nil, err
 	}
@@ -40,8 +41,13 @@ func NewCuckooFilter(
 }
 
 // IsDuplicate checks if the key is present in the bloom filter.
-func (bf *BloomFilter) IsDuplicate(ctx context.Context, key string) (bool, error) {
-	exists, err := bf.store.BFExists(ctx, bf.bfKey, key)
+func (bf *BloomFilter) IsDuplicate(ctx context.Context, data any) (bool, error) {
+	key, ok := data.(string)
+	if !ok {
+		return false, fmt.Errorf("bf-isduplicate: bad data, expected string")
+	}
+
+	exists, err := bf.store.BFExists(ctx, bf.Key, key)
 	if err != nil {
 		return false, err
 	}
@@ -50,7 +56,7 @@ func (bf *BloomFilter) IsDuplicate(ctx context.Context, key string) (bool, error
 		return true, nil
 	}
 
-	_, err = bf.store.BFAdd(ctx, bf.bfKey, key)
+	_, err = bf.store.BFAdd(ctx, bf.Key, key)
 	if err != nil {
 		return false, err
 	}
