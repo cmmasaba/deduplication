@@ -30,27 +30,6 @@ type KeyValDeduplicator struct {
 	Timeout    time.Duration
 }
 
-// IsDuplicate returns `true` if the value hash calculated by [ValueHasher]
-// was seen in a deduplication time window.
-func (d *KeyValDeduplicator) IsDuplicate(ctx context.Context, data any) (bool, error) {
-	var buf bytes.Buffer
-
-	err := gob.NewEncoder(&buf).Encode(data)
-	if err != nil {
-		return false, err
-	}
-
-	key, err := d.KeyFactory(buf.Bytes())
-	if err != nil {
-		return false, err
-	}
-
-	ctx, cancel := context.WithTimeout(ctx, d.Timeout)
-	defer cancel()
-
-	return d.Repository.IsDuplicate(ctx, keyvalue.Payload{Key: key, Value: data})
-}
-
 func NewKeyValDeduplicator(
 	keyFactory keyvalue.ValueHasher, ctxTimeout, window time.Duration,
 ) (*KeyValDeduplicator, error) {
@@ -76,6 +55,27 @@ func NewKeyValDeduplicator(
 	return d, nil
 }
 
+// IsDuplicate returns `true` if the value hash calculated by [ValueHasher]
+// was seen in a deduplication time window.
+func (d *KeyValDeduplicator) IsDuplicate(ctx context.Context, data any) (bool, error) {
+	var buf bytes.Buffer
+
+	err := gob.NewEncoder(&buf).Encode(data)
+	if err != nil {
+		return false, err
+	}
+
+	key, err := d.KeyFactory(buf.Bytes())
+	if err != nil {
+		return false, err
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, d.Timeout)
+	defer cancel()
+
+	return d.Repository.IsDuplicate(ctx, keyvalue.Payload{Key: key, Value: data})
+}
+
 type BloomFilterDeduplicator struct {
 	Repository KeyRepository
 	Timeout    time.Duration
@@ -87,10 +87,6 @@ func NewBloomFilterDeduplicator(
 	errorRate float64,
 	capacity, expansion int64,
 ) (*BloomFilterDeduplicator, error) {
-	if ctxTimeout < 5*time.Millisecond {
-		ctxTimeout = 5 * time.Millisecond
-	}
-
 	bf, err := bloomfilter.NewBloomFilter(
 		os.Getenv("REDIS_HOST_URL"),
 		filterKey,
@@ -102,6 +98,10 @@ func NewBloomFilterDeduplicator(
 		return nil, err
 	}
 
+	if ctxTimeout < 5*time.Millisecond {
+		ctxTimeout = 5 * time.Millisecond
+	}
+
 	d := &BloomFilterDeduplicator{
 		Repository: bf,
 		Timeout:    ctxTimeout,
@@ -110,9 +110,7 @@ func NewBloomFilterDeduplicator(
 	return d, nil
 }
 
-// IsDuplicate returns `true` if the data is present in the bloom filter
-// within a given deduplication time window.
-// TODO: setup the deduplication window
+// IsDuplicate returns `true` if the data is present in the bloom filter.
 func (d *BloomFilterDeduplicator) IsDuplicate(ctx context.Context, data any) (bool, error) {
 	ctx, cancel := context.WithTimeout(ctx, d.Timeout)
 	defer cancel()
@@ -131,10 +129,6 @@ func NewCuckooFilterDeduplicator(
 	capacity, bucketSize int64,
 	window time.Duration,
 ) (*CuckooFilterDeduplicator, error) {
-	if ctxTimeout < 5*time.Millisecond {
-		ctxTimeout = 5 * time.Millisecond
-	}
-
 	cf, err := cuckoofilter.NewCuckooFilter(
 		os.Getenv("REDIS_HOST_URL"),
 		filterKey,
@@ -146,6 +140,10 @@ func NewCuckooFilterDeduplicator(
 		return nil, err
 	}
 
+	if ctxTimeout < 5*time.Millisecond {
+		ctxTimeout = 5 * time.Millisecond
+	}
+
 	d := &CuckooFilterDeduplicator{
 		Repository: cf,
 		Timeout:    ctxTimeout,
@@ -154,9 +152,7 @@ func NewCuckooFilterDeduplicator(
 	return d, nil
 }
 
-// IsDuplicate returns `true` if the data is present in the cuckoo filter
-// within a given deduplication time window.
-// TODO: setup the deduplication window
+// IsDuplicate returns `true` if the data is present in the cuckoo filter.
 func (d *CuckooFilterDeduplicator) IsDuplicate(ctx context.Context, data any) (bool, error) {
 	ctx, cancel := context.WithTimeout(ctx, d.Timeout)
 	defer cancel()

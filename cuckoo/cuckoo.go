@@ -3,6 +3,8 @@ package cuckoofilter
 import (
 	"context"
 	"fmt"
+	"log/slog"
+	"os"
 	"time"
 
 	"github.com/cmmasaba/deduplication/cache"
@@ -21,6 +23,8 @@ type CuckooFilter struct {
 	window time.Duration
 }
 
+var logger = slog.New(slog.NewTextHandler(os.Stdout, nil))
+
 // NewCuckooFilter creates and returns a [CuckooFilter] backed by Redis.
 func NewCuckooFilter(
 	connStr, cfKey string,
@@ -29,6 +33,8 @@ func NewCuckooFilter(
 ) (*CuckooFilter, error) {
 	c, err := cache.NewCache(connStr)
 	if err != nil {
+		logger.Error("[cf] error initializing cache", "error", err)
+
 		return nil, err
 	}
 
@@ -36,6 +42,8 @@ func NewCuckooFilter(
 
 	_, err = cf.store.CFInit(context.Background(), cfKey, capacity, bucketSize)
 	if err != nil {
+		logger.Error("[cf] error initializing cuckoo filter", "error", err)
+
 		return nil, err
 	}
 
@@ -46,11 +54,15 @@ func NewCuckooFilter(
 func (cf *CuckooFilter) IsDuplicate(ctx context.Context, data any) (bool, error) {
 	key, ok := data.(string)
 	if !ok {
-		return false, fmt.Errorf("cf-isduplicate: bad data, expected string")
+		logger.Error("[cf] error checking duplicate", "error", "expected string")
+
+		return false, fmt.Errorf("bad data, expected string")
 	}
 
 	exists, err := cf.store.CFExists(ctx, cf.cfKey, key)
 	if err != nil {
+		logger.Error("[cf] error perfoming cf lookup", "error", err)
+
 		return false, err
 	}
 
@@ -60,6 +72,8 @@ func (cf *CuckooFilter) IsDuplicate(ctx context.Context, data any) (bool, error)
 
 	_, err = cf.store.CFAdd(ctx, cf.cfKey, key)
 	if err != nil {
+		logger.Error("[cf] error perfoming cf insertion", "error", err)
+
 		return false, err
 	}
 

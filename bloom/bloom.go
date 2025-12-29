@@ -3,13 +3,14 @@ package bloomfilter
 import (
 	"context"
 	"fmt"
+	"log/slog"
+	"os"
 
 	"github.com/cmmasaba/deduplication/cache"
 )
 
 type bfStore interface {
 	BFAdd(context.Context, string, string) (bool, error)
-	// BFDel(context.Context, string, string) (bool, error)
 	BFExists(context.Context, string, string) (bool, error)
 	BFInit(context.Context, string, float64, int64, int64) (bool, error)
 }
@@ -19,6 +20,8 @@ type BloomFilter struct {
 	Key   string
 }
 
+var logger = slog.New(slog.NewTextHandler(os.Stdout, nil))
+
 // NewBloomFilter creates and returns a [BloomFilter] backed by Redis.
 func NewBloomFilter(
 	connStr, bfKey string,
@@ -27,6 +30,8 @@ func NewBloomFilter(
 ) (*BloomFilter, error) {
 	c, err := cache.NewCache(connStr)
 	if err != nil {
+		logger.Error("[bf] error initializing cache", "error", err)
+
 		return nil, err
 	}
 
@@ -34,6 +39,8 @@ func NewBloomFilter(
 
 	_, err = bf.store.BFInit(context.Background(), bfKey, errorRate, capacity, expansion)
 	if err != nil {
+		logger.Error("[bf] error initializing bloom filter", "error", err)
+
 		return nil, err
 	}
 
@@ -44,11 +51,15 @@ func NewBloomFilter(
 func (bf *BloomFilter) IsDuplicate(ctx context.Context, data any) (bool, error) {
 	key, ok := data.(string)
 	if !ok {
-		return false, fmt.Errorf("bf-isduplicate: bad data, expected string")
+		logger.Error("[bf] error checking duplicate", "error", "expected string")
+
+		return false, fmt.Errorf("bad data, expected string")
 	}
 
 	exists, err := bf.store.BFExists(ctx, bf.Key, key)
 	if err != nil {
+		logger.Error("[bf] error perfoming bf lookup", "error", err)
+
 		return false, err
 	}
 
@@ -58,6 +69,8 @@ func (bf *BloomFilter) IsDuplicate(ctx context.Context, data any) (bool, error) 
 
 	_, err = bf.store.BFAdd(ctx, bf.Key, key)
 	if err != nil {
+		logger.Error("[bf] error perfoming bf insertion", "error", err)
+
 		return false, err
 	}
 

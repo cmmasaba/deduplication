@@ -2,7 +2,6 @@ package cache
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/redis/go-redis/extra/redisotel/v9"
@@ -54,14 +53,12 @@ func (c *Cache) BFInit(
 	errorRate float64,
 	capacity, expansion int64,
 ) (bool, error) {
-	cmd := fmt.Sprintf("EXPANSION %v", expansion)
-
-	ok, err := c.cache.Do(ctx, "BF.RESERVE", bfKey, errorRate, capacity, cmd).Bool()
+	err := c.cache.Do(ctx, "BF.RESERVE", bfKey, errorRate, capacity, "EXPANSION", expansion).Err()
 	if err != nil {
 		return false, err
 	}
 
-	return ok, nil
+	return true, nil
 }
 
 func (c *Cache) BFAdd(ctx context.Context, bfKey, key string) (bool, error) {
@@ -82,28 +79,17 @@ func (c *Cache) BFExists(ctx context.Context, bfKey, key string) (bool, error) {
 	return exists, nil
 }
 
-// func (c *Cache) BFDel(ctx context.Context, cfKey, key string) (bool, error) {
-// 	ok, err := c.cache.Do(ctx, "BF.DEL", cfKey, key).Bool()
-// 	if err != nil {
-// 		return false, err
-// 	}
-
-// 	return ok, nil
-// }
-
 func (c *Cache) CFInit(
 	ctx context.Context,
 	cfKey string,
 	capacity, bucketSize int64,
 ) (bool, error) {
-	cmd := fmt.Sprintf("BUCKETSIZE %v", bucketSize)
-
-	ok, err := c.cache.Do(ctx, "CF.RESERVE", cfKey, capacity, cmd).Bool()
+	err := c.cache.Do(ctx, "CF.RESERVE", cfKey, capacity, "BUCKETSIZE", bucketSize).Err()
 	if err != nil {
 		return false, err
 	}
 
-	return ok, nil
+	return true, nil
 }
 
 func (c *Cache) CFAdd(ctx context.Context, cfKey, hash string) (bool, error) {
