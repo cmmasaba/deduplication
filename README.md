@@ -1,18 +1,40 @@
-# Expired Key Repository
+# Deduplication
 
-An expired key repository is a store for key-value pairs. The key-value pairs are only valid for a specified time duration, after which they are automatically cleared out<br>
+Deduplication is a technique of removing duplicate copies of repeating data. It is useful in many different contexts such as:
 
-Example usecases:
+- in storage systems to reduce storage requirement needs
+- in network transfer to reduce the amount of bytes sent over the network
+- in message-oriented systems to avoid processing the same message twice
+- in targeted ads systems to avoid showing the user the same ad
+- in product recommendation systems to avoid showing the user the same product
 
-- session management in web browsers by storing user's session data which expires after a period of inactivity.
-- caching frequently accessed data with expiration dates for periodic refreshes
-- rate limiting by tracking a user's rate limits with keys that expire after a time duration
-- store for auth tokens, OTP codes and password reset codes that should be valid for a preset duration
-- deduplication in an asynchronous message-oriented middleware using at-least-once delivery
+Deduplication systems can be categorized according to a number of criteria:
 
-This implementation was inspired by the last use case above. For example in pub/sub, the publisher sends messages until the subscriber acknowleges them. To maintain idempotency, the deduplicator drops messages it marks as duplicates within a specified time window.
-In my implementation the repository is backed by Redis which has good benefits:
+<ol type="i">
+	<li>
+		post-process deduplication: new data is first stored on device then later a process analyzes the data looking for duplicates.
+	</li>
+	<li>
+		inline deduplication: done as data is incoming on the device to look for and eliminate duplicates.
+	</li>
+	<li>
+		target deduplication: deduplication is done where the data is stored/processed.
+	</li>
+	<li>
+		source deduplication: deduplication is done where the data is created or originating.
+	</li>
+</ol>
 
-- highly efficient for lookup operations
-- automatic cleanup of keys afte expiry
-- supports distributed workloads
+I implemented three different approaches to deduplication, each with it's own benefits. They are:
+
+<ol type="i">
+	<li>
+		Expiring key repository deduplicator.
+	</li>
+	<li>
+		Bloom filter deduplicator.
+	</li>
+	<li>
+		Cuckoo filter deduplicator.
+	</li>
+</ol>

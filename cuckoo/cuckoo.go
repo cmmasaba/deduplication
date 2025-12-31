@@ -2,7 +2,6 @@ package cuckoofilter
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"os"
 	"time"
@@ -10,10 +9,12 @@ import (
 	"github.com/cmmasaba/deduplication/cache"
 )
 
+var logger = slog.New(slog.NewTextHandler(os.Stdout, nil))
+
 type cfStore interface {
-	CFAdd(context.Context, string, string) (bool, error)
-	CFDel(context.Context, string, string) (bool, error)
-	CFExists(context.Context, string, string) (bool, error)
+	CFAdd(context.Context, string, any) (bool, error)
+	CFDel(context.Context, string, any) (bool, error)
+	CFExists(context.Context, string, any) (bool, error)
 	CFInit(ctx context.Context, cfKey string, capacity, bucketSize int64) (bool, error)
 }
 
@@ -23,10 +24,8 @@ type CuckooFilter struct {
 	window time.Duration
 }
 
-var logger = slog.New(slog.NewTextHandler(os.Stdout, nil))
-
-// NewCuckooFilter creates and returns a [CuckooFilter] backed by Redis.
-func NewCuckooFilter(
+// New creates and returns a [CuckooFilter] backed by Redis.
+func New(
 	connStr, cfKey string,
 	capacity, bucketSize int64,
 	window time.Duration,
@@ -52,14 +51,7 @@ func NewCuckooFilter(
 
 // IsDuplicate checks if the key is present in the cuckoo filter.
 func (cf *CuckooFilter) IsDuplicate(ctx context.Context, data any) (bool, error) {
-	key, ok := data.(string)
-	if !ok {
-		logger.Error("[cf] error checking duplicate", "error", "expected string")
-
-		return false, fmt.Errorf("bad data, expected string")
-	}
-
-	exists, err := cf.store.CFExists(ctx, cf.cfKey, key)
+	exists, err := cf.store.CFExists(ctx, cf.cfKey, data)
 	if err != nil {
 		logger.Error("[cf] error perfoming cf lookup", "error", err)
 
@@ -70,7 +62,7 @@ func (cf *CuckooFilter) IsDuplicate(ctx context.Context, data any) (bool, error)
 		return true, nil
 	}
 
-	_, err = cf.store.CFAdd(ctx, cf.cfKey, key)
+	_, err = cf.store.CFAdd(ctx, cf.cfKey, data)
 	if err != nil {
 		logger.Error("[cf] error perfoming cf insertion", "error", err)
 

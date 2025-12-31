@@ -10,7 +10,7 @@ import (
 
 	bloomfilter "github.com/cmmasaba/deduplication/bloom"
 	cuckoofilter "github.com/cmmasaba/deduplication/cuckoo"
-	keyvalue "github.com/cmmasaba/deduplication/keyval"
+	"github.com/cmmasaba/deduplication/keyvalue"
 )
 
 type KeyRepository interface {
@@ -87,7 +87,7 @@ func NewBloomFilterDeduplicator(
 	errorRate float64,
 	capacity, expansion int64,
 ) (*BloomFilterDeduplicator, error) {
-	bf, err := bloomfilter.NewBloomFilter(
+	bf, err := bloomfilter.New(
 		os.Getenv("REDIS_HOST_URL"),
 		filterKey,
 		errorRate,
@@ -129,7 +129,7 @@ func NewCuckooFilterDeduplicator(
 	capacity, bucketSize int64,
 	window time.Duration,
 ) (*CuckooFilterDeduplicator, error) {
-	cf, err := cuckoofilter.NewCuckooFilter(
+	cf, err := cuckoofilter.New(
 		os.Getenv("REDIS_HOST_URL"),
 		filterKey,
 		capacity,

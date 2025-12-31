@@ -23,13 +23,13 @@ const ValueHasherLimitMinimum = 64
 // ValueHasher returns a hash that identifies a value.
 type ValueHasher func(value []byte) (string, error)
 
-type KeyStore interface {
+type keyStore interface {
 	Exists(context.Context, ...string) *redis.IntCmd
 	SetEx(context.Context, string, any, time.Duration) *redis.StatusCmd
 }
 
 type RedisExpiringKeyRepo struct {
-	cache  KeyStore
+	cache  keyStore
 	window time.Duration
 }
 

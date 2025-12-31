@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/cmmasaba/deduplication"
-	keyvalue "github.com/cmmasaba/deduplication/keyval"
+	"github.com/cmmasaba/deduplication/keyvalue"
 )
 
 func keyValueExample(wg *sync.WaitGroup, vals []string) {

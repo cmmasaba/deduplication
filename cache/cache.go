@@ -61,7 +61,7 @@ func (c *Cache) BFInit(
 	return true, nil
 }
 
-func (c *Cache) BFAdd(ctx context.Context, bfKey, key string) (bool, error) {
+func (c *Cache) BFAdd(ctx context.Context, bfKey string, key any) (bool, error) {
 	ok, err := c.cache.Do(ctx, "BF.ADD", bfKey, key).Bool()
 	if err != nil {
 		return false, err
@@ -70,7 +70,7 @@ func (c *Cache) BFAdd(ctx context.Context, bfKey, key string) (bool, error) {
 	return ok, nil
 }
 
-func (c *Cache) BFExists(ctx context.Context, bfKey, key string) (bool, error) {
+func (c *Cache) BFExists(ctx context.Context, bfKey string, key any) (bool, error) {
 	exists, err := c.cache.Do(ctx, "BF.EXISTS", bfKey, key).Bool()
 	if err != nil {
 		return false, err
@@ -92,8 +92,8 @@ func (c *Cache) CFInit(
 	return true, nil
 }
 
-func (c *Cache) CFAdd(ctx context.Context, cfKey, hash string) (bool, error) {
-	ok, err := c.cache.Do(ctx, "CF.ADD", cfKey, hash).Bool()
+func (c *Cache) CFAdd(ctx context.Context, cfKey string, key any) (bool, error) {
+	ok, err := c.cache.Do(ctx, "CF.ADD", cfKey, key).Bool()
 	if err != nil {
 		return false, err
 	}
@@ -101,7 +101,7 @@ func (c *Cache) CFAdd(ctx context.Context, cfKey, hash string) (bool, error) {
 	return ok, nil
 }
 
-func (c *Cache) CFExists(ctx context.Context, cfKey, key string) (bool, error) {
+func (c *Cache) CFExists(ctx context.Context, cfKey string, key any) (bool, error) {
 	exists, err := c.cache.Do(ctx, "CF.EXISTS", cfKey, key).Bool()
 	if err != nil {
 		return false, err
@@ -110,7 +110,7 @@ func (c *Cache) CFExists(ctx context.Context, cfKey, key string) (bool, error) {
 	return exists, nil
 }
 
-func (c *Cache) CFDel(ctx context.Context, cfKey, key string) (bool, error) {
+func (c *Cache) CFDel(ctx context.Context, cfKey string, key any) (bool, error) {
 	ok, err := c.cache.Do(ctx, "CF.DEL", cfKey, key).Bool()
 	if err != nil {
 		return false, err
